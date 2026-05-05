@@ -39,29 +39,36 @@ function draw() {
   // 繪製 facemesh 特徵點
   if (predictions.length > 0 && capture.width > 0) {
     let keypoints = predictions[0].keypoints;
-    let indices = [409, 270, 269, 267, 0, 37, 39, 40, 185, 61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291];
 
-    stroke(255, 0, 0); // 設定線條為紅色
-    strokeWeight(15); // 設定線條粗細為 15
-
-    // 利用 line 指令將特徵點串接在一起
-    for (let i = 0; i < indices.length; i++) {
-      let pt1 = keypoints[indices[i]];
-      let pt2 = keypoints[indices[(i + 1) % indices.length]]; // 連接下一個點，最後一個點連回開頭形成封閉嘴唇
-
-      let x1 = pt1.x;
-      let y1 = pt1.y;
-      let x2 = pt2.x;
-      let y2 = pt2.y;
-
-      // 將座標映射到與影像相同比例與位置上 (50% 置中)
-      let mappedX1 = map(x1, 0, capture.width, width / 2 - width * 0.25, width / 2 + width * 0.25);
-      let mappedY1 = map(y1, 0, capture.height, height / 2 - height * 0.25, height / 2 + height * 0.25);
-      let mappedX2 = map(x2, 0, capture.width, width / 2 - width * 0.25, width / 2 + width * 0.25);
-      let mappedY2 = map(y2, 0, capture.height, height / 2 - height * 0.25, height / 2 + height * 0.25);
-      
-      line(mappedX1, mappedY1, mappedX2, mappedY2);
+    // 將攝影機座標映射到畫布上影像的對應位置
+    function mapPt(pt) {
+      return {
+        x: map(pt.x, 0, capture.width,  width  / 2 - width  * 0.25, width  / 2 + width  * 0.25),
+        y: map(pt.y, 0, capture.height, height / 2 - height * 0.25, height / 2 + height * 0.25)
+      };
     }
+
+    // 依照給定的索引陣列與顏色，繪製封閉輪廓線
+    function drawContour(indices, col) {
+      stroke(col);
+      for (let i = 0; i < indices.length; i++) {
+        let a = mapPt(keypoints[indices[i]]);
+        let b = mapPt(keypoints[indices[(i + 1) % indices.length]]);
+        line(a.x, a.y, b.x, b.y);
+      }
+    }
+
+    strokeWeight(3);
+    noFill();
+
+    // 嘴唇（紅色）
+    drawContour([409, 270, 269, 267, 0, 37, 39, 40, 185, 61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291], color(255, 0, 0));
+
+    // 左眼（藍色）— MediaPipe 左眼輪廓索引
+    drawContour([362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398], color(0, 100, 255));
+
+    // 右眼（金色）— MediaPipe 右眼輪廓索引
+    drawContour([33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246], color(255, 200, 0));
   }
   pop(); // 恢復畫布座標狀態
 }
